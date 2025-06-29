@@ -59,7 +59,7 @@ stage('Promote') {
 
             sh '''
                 # Construir la URL remota dentro del shell
-                REMOTE_URL="https://${GIT_USER}:${GIT_TOKEN}@github.com/<org>/<repo>.git"
+                REMOTE_URL="https://${GIT_USER}:${GIT_TOKEN}@github.com/develop/todo-list-aws.git"
 
                 git fetch "$REMOTE_URL"
                 git checkout master || git checkout -b master origin/master
