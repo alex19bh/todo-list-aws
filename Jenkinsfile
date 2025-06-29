@@ -57,21 +57,19 @@ stage('Promote') {
                 usernameVariable: 'GIT_USER',
                 passwordVariable: 'GIT_TOKEN')]) {
 
-            sh '''
-
+            sh """
                 git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/<org>/<repo>.git
-
 
                 git fetch origin
                 git checkout master || git checkout -b master origin/master
                 git merge origin/develop
 
-
                 git push origin master
-            '''
+            """
         }
     }
 }
+
 
     }
 }
