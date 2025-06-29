@@ -35,7 +35,7 @@ pipeline {
             steps {
                 sh '''
                     sam build
-                    sam deploy --stack-name $STACK_NAME --s3-bucket $S3_BUCKET --region $AWS_REGION --capabilities CAPABILITY_IAM --no-fail-on-empty-changeset
+                    sam deploy --stack-name $STACK_NAME --s3-bucket $S3_BUCKET --region $AWS_REGION --capabilities CAPABILITY_IAM --no-fail-on-empty-changeset --parameter-overrides Stage=staging
                 '''
             }
         }
