@@ -5,6 +5,8 @@ pipeline {
         AWS_REGION = 'us-east-1'
         STACK_NAME = 'todo-list-aws-staging'
         S3_BUCKET = 'aws-sam-cli-managed-default-samclisourcebucket-qmu3tffcy8al'
+        REPO = 'todo-list-aws.git'
+        USUARIO_GITHUB = 'alex19bh'
     }
 
     stages {
@@ -58,8 +60,8 @@ stage('Promote') {
                 passwordVariable: 'GIT_TOKEN')]) {
 
             sh '''
-                # Construir la URL remota dentro del shell
-                REMOTE_URL="https://${GIT_USER}:${GIT_TOKEN}@github.com/alex19bh/todo-list-aws.git"
+
+                REMOTE_URL="https://${GIT_USER}:${GIT_TOKEN}@github.com/$USUARIO_GITHUB/$REPO"
 
                 git fetch "$REMOTE_URL"
                 git checkout master || git checkout -b master origin/master
