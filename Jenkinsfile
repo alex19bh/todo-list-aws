@@ -49,33 +49,25 @@ pipeline {
             }
         }
         
-stage('Promote') {
-    when {
-        expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
-    }
-    steps {
-        withCredentials([usernamePassword(
-                credentialsId: 'github-token',
-                usernameVariable: 'GIT_USER',
-                passwordVariable: 'GIT_TOKEN')]) {
-
-            sh '''
-
-                REMOTE_URL="https://${GIT_USER}:${GIT_TOKEN}@github.com/$USUARIO_GITHUB/$REPO"
-
-                git fetch "$REMOTE_URL"
-                git checkout master || git checkout -b master origin/master
-                git merge origin/develop
-
-                git push "$REMOTE_URL" master
-            '''
+        stage('Promote') {
+            when {
+                expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+            }
+            
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-token',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_TOKEN')]) {
+                        sh '''
+                            REMOTE_URL="https://${GIT_USER}:${GIT_TOKEN}@github.com/$USUARIO_GITHUB/$REPO"
+                            git fetch "$REMOTE_URL"
+                            git checkout master || git checkout -b master origin/master
+                            git merge origin/develop
+                            git push "$REMOTE_URL" master
+                        '''
+                        }
+            }
         }
-    }
-}
-
-
-
-
-
     }
 }
