@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1'
-        STACK_NAME = 'todo-list-aws-staging'
+        STACK_NAME = 'todo-list-aws-alex-staging'
         S3_BUCKET = 'aws-sam-cli-managed-default-samclisourcebucket-qmu3tffcy8al'
         REPO = 'todo-list-aws.git'
         USUARIO_GITHUB = 'alex19bh'
