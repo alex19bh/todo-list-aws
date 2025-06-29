@@ -46,19 +46,32 @@ pipeline {
                 '''
             }
         }
+        
+stage('Promote') {
+    when {
+        expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+    }
+    steps {
+        withCredentials([usernamePassword(
+                credentialsId: 'github-token',
+                usernameVariable: 'GIT_USER',
+                passwordVariable: 'GIT_TOKEN')]) {
 
-        stage('Promote') {
-            when {
-                expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
-            }
-            steps {
-                sh '''
-                    git fetch origin
-                    git checkout master || git checkout -b master origin/master
-                    git merge origin/develop
-                    git push origin master
-                '''
-            }
+            sh '''
+
+                git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/<org>/<repo>.git
+
+
+                git fetch origin
+                git checkout master || git checkout -b master origin/master
+                git merge origin/develop
+
+
+                git push origin master
+            '''
         }
+    }
+}
+
     }
 }
