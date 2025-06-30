@@ -41,7 +41,6 @@ pipeline {
                     flake8(pattern: 'flake8-report.txt'),
                     pyLint(name: 'Bandit', pattern: 'bandit-report.out')
                 ]
-                /* Volvemos a guardar por si hiciste ajustes al código (no suele ser necesario, pero es seguro) */
                 stash name: 'fuente', includes: '**/*'
             }
         }
@@ -97,7 +96,6 @@ pipeline {
 
         /* ---------- NODO PRINCIPAL ---------- */
         stage('Promote') {
-            /* Solo si todo ha ido bien */
             when { expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' } }
             agent { label 'principal' }
 
