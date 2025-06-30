@@ -1,0 +1,111 @@
+pipeline {
+    /*  Usamos agent none para que cada stage declare su agente explícito  */
+    agent none           
+
+    environment {
+        AWS_REGION   = 'us-east-1'
+        STACK_NAME   = 'todo-list-aws-staging'
+        S3_BUCKET    = 'aws-sam-cli-managed-default-samclisourcebucket-qmu3tffcy8al'
+        REPO         = 'todo-list-aws.git'
+        USUARIO_GITHUB = 'alex19bh'
+    }
+
+    stages {
+
+        /* ---------- NODO PRINCIPAL ---------- */
+        stage('Get Code') {
+            agent { label 'principal' }
+            steps {
+                cleanWs()
+                echo 'Descargando código desde la rama develop…'
+                git branch: 'develop',
+                    url: 'https://github.com/alex19bh/todo-list-aws.git'
+                /* Guardamos el workspace para los demás nodos */
+                stash name: 'fuente', includes: '**/*'
+            }
+        }
+
+        /* ---------- NODO segundonodoubuntu ---------- */
+        stage('Static Test') {
+            agent { label 'segundonodoubuntu' }
+            steps {
+                cleanWs()
+                unstash 'fuente'
+                sh '''
+                    flake8 src > flake8-report.txt || true
+                    bandit -r src -f custom -o bandit-report.out --msg-template "{abspath}:{line}: [{test_id}] {msg}" || true
+                '''
+                recordIssues tools: [
+                    flake8(pattern: 'flake8-report.txt'),
+                    pyLint(name: 'Bandit', pattern: 'bandit-report.out')
+                ]
+                /* Volvemos a guardar por si hiciste ajustes al código (no suele ser necesario, pero es seguro) */
+                stash name: 'fuente', includes: '**/*'
+            }
+        }
+
+        /* ---------- NODO PRINCIPAL ---------- */
+        stage('Deploy') {
+            agent { label 'principal' }
+            steps {
+                cleanWs()
+                unstash 'fuente'
+                sh '''
+                    sam build
+                    sam deploy \
+                        --stack-name $STACK_NAME \
+                        --s3-bucket $S3_BUCKET \
+                        --region $AWS_REGION \
+                        --capabilities CAPABILITY_IAM \
+                        --no-fail-on-empty-changeset \
+                        --parameter-overrides Stage=staging
+                '''
+                /* Guardamos de nuevo por si los tests necesitan artefactos */
+                stash name: 'fuente', includes: '**/*'
+            }
+        }
+
+        /* ---------- NODO tercernodoubuntu ---------- */
+        stage('Rest Test') {
+            agent { label 'tercernodoubuntu' }
+            steps {
+                cleanWs()
+                unstash 'fuente'
+                sh '''
+                    BASE_URL=$(aws cloudformation describe-stacks \
+                        --stack-name $STACK_NAME \
+                        --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
+                        --region $AWS_REGION \
+                        --output text)
+                    export BASE_URL
+                    python3 -m pytest test/integration/todoApiTest.py
+                '''
+            }
+        }
+
+        /* ---------- NODO PRINCIPAL ---------- */
+        stage('Promote') {
+            /* Solo si todo ha ido bien */
+            when { expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' } }
+            agent { label 'principal' }
+
+            steps {
+                cleanWs()
+                unstash 'fuente'
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-token',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_TOKEN')]) {
+
+                    sh '''
+                        REMOTE_URL="https://${GIT_USER}:${GIT_TOKEN}@github.com/$USUARIO_GITHUB/$REPO"
+                        git fetch "$REMOTE_URL"
+                        git checkout master || git checkout -b master origin/master
+                        git merge origin/develop
+                        git push "$REMOTE_URL" master
+                    '''
+                }
+            }
+        }
+    }
+}
