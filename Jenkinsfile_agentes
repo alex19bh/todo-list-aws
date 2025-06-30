@@ -46,46 +46,53 @@ pipeline {
             }
         }
 
-        /* ---------- NODO PRINCIPAL ---------- */
-        stage('Deploy') {
-            agent { label 'principal' }
-            steps {
-                sh 'hostname'
-                cleanWs()
-                unstash 'fuente'
-                sh '''
-                    sam build
-                    sam deploy \
-                        --stack-name $STACK_NAME \
-                        --s3-bucket $S3_BUCKET \
-                        --region $AWS_REGION \
-                        --capabilities CAPABILITY_IAM \
-                        --no-fail-on-empty-changeset \
-                        --parameter-overrides Stage=staging
-                '''
-                /* Guardamos de nuevo por si los tests necesitan artefactos */
-                stash name: 'fuente', includes: '**/*'
-            }
-        }
 
-        /* ---------- NODO tercernodoubuntu ---------- */
-        stage('Rest Test') {
-            agent { label 'tercernodoubuntu' }
-            steps {
-                sh 'hostname'
-                cleanWs()
-                unstash 'fuente'
-                sh '''
-                    BASE_URL=$(aws cloudformation describe-stacks \
-                        --stack-name $STACK_NAME \
-                        --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
-                        --region $AWS_REGION \
-                        --output text)
-                    export BASE_URL
-                    python3 -m pytest test/integration/todoApiTest.py
-                '''
-            }
+stage('Deploy') {
+    agent { label 'principal' }
+    steps {
+        cleanWs()
+        unstash 'fuente'
+        sh '''
+            sam build
+            sam deploy \
+              --stack-name $STACK_NAME \
+              --s3-bucket $S3_BUCKET \
+              --region $AWS_REGION \
+              --capabilities CAPABILITY_IAM \
+              --no-fail-on-empty-changeset \
+              --parameter-overrides Stage=staging
+        '''
+        /* ─── Obtener Base URL una sola vez ─── */
+        script {
+            env.BASE_URL = sh(
+                script: """
+                    aws cloudformation describe-stacks \
+                      --stack-name ${STACK_NAME} \
+                      --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
+                      --region ${AWS_REGION} --output text
+                """,
+                returnStdout: true
+            ).trim()
+            echo "Base URL obtenida: ${env.BASE_URL}"
         }
+        /* Si tus tests necesitan el código, vuelve a guardarlo */
+        stash name: 'fuente', includes: '**/*'
+    }
+}
+
+stage('Rest Test') {
+    agent { label 'tercernodoubuntu' }
+    steps {
+        cleanWs()
+        unstash 'fuente'
+        sh '''
+            echo "Usando BASE_URL=$BASE_URL"
+            export BASE_URL   # por si tu código Python lo lee del entorno
+            python3 -m pytest test/integration/todoApiTest.py
+        '''
+    }
+}
+
 
         /* ---------- NODO PRINCIPAL ---------- */
         stage('Promote') {
