@@ -1,5 +1,4 @@
 pipeline {
-    /*  Usamos agent none para que cada stage declare su agente explícito  */
     agent none           
 
     environment {
@@ -22,7 +21,6 @@ pipeline {
                 echo 'Descargando código desde la rama develop…'
                 git branch: 'develop',
                     url: 'https://github.com/alex19bh/todo-list-aws.git'
-                /* Guardamos el workspace para los demás nodos */
                 stash name: 'fuente', includes: '**/*'
             }
         }
