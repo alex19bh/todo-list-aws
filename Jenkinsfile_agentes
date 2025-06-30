@@ -102,8 +102,6 @@ stage('Rest Test') {
 
             steps {
                 sh 'hostname'
-                cleanWs()
-                unstash 'fuente'
                 withCredentials([usernamePassword(
                     credentialsId: 'github-token',
                     usernameVariable: 'GIT_USER',
