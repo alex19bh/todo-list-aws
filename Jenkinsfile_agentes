@@ -16,7 +16,7 @@ pipeline {
         stage('Get Code') {
             agent { label 'principal' }
             steps {
-                sh 'whoami'
+                sh 'hostname'
                 cleanWs()
                 echo 'Descargando código desde la rama develop…'
                 git branch: 'develop',
@@ -30,7 +30,7 @@ pipeline {
         stage('Static Test') {
             agent { label 'segundonodoubuntu' }
             steps {
-                sh 'whoami'
+                sh 'hostname'
                 cleanWs()
                 unstash 'fuente'
                 sh '''
@@ -50,7 +50,7 @@ pipeline {
         stage('Deploy') {
             agent { label 'principal' }
             steps {
-                sh 'whoami'
+                sh 'hostname'
                 cleanWs()
                 unstash 'fuente'
                 sh '''
@@ -72,7 +72,7 @@ pipeline {
         stage('Rest Test') {
             agent { label 'tercernodoubuntu' }
             steps {
-                sh 'whoami'
+                sh 'hostname'
                 cleanWs()
                 unstash 'fuente'
                 sh '''
@@ -94,7 +94,7 @@ pipeline {
             agent { label 'principal' }
 
             steps {
-                sh 'whoami'
+                sh 'hostname'
                 cleanWs()
                 unstash 'fuente'
                 withCredentials([usernamePassword(
