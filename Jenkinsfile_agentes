@@ -93,7 +93,7 @@ pipeline {
                 unstash 'fuente'
                 sh '''
                     echo "Usando BASE_URL=$BASE_URL"
-                    export BASE_URL   # por si tu código Python lo lee del entorno
+                    export BASE_URL
                     python3 -m pytest test/integration/todoApiTest.py
                 '''
             }
